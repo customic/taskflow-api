@@ -35,14 +35,12 @@ class TaskSerializer(serializers.ModelSerializer):
         user = request.user
         is_admin = user.is_staff or user.is_superuser
 
-        # Dropdown dla project
         if "project" in self.fields:
             if is_admin:
                 self.fields["project"].queryset = Project.objects.all()
             else:
                 self.fields["project"].queryset = Project.objects.filter(owner=user)
 
-        # Dropdown dla labels (Ty masz labels jako PrimaryKeyRelatedField)
         if "labels" in self.fields:
             if is_admin:
                 self.fields["labels"].queryset = Label.objects.all()
