@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Count
 from rest_framework import permissions, viewsets
 from rest_framework.request import Request
-
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from .models import Comment, Label, Project, Task
 from .serializers import CommentSerializer, LabelSerializer, ProjectSerializer, TaskSerializer
 
@@ -70,6 +71,32 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer: TaskSerializer) -> None:
         serializer.save(owner=self.request.user)
+
+    @action(detail=False, methods=["get"], url_path="by-status")
+    def by_status(self, request):
+        status = request.query_params.get("status")
+
+        allowed = {"todo", "doing", "done"}
+        if status not in allowed:
+            return Response(
+                {"detail": "Provide ?status=todo|doing|done"},
+                status=400,
+            )
+
+        qs = self.get_queryset().filter(status=status)
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=["get"], url_path="stats")
+    def stats(self, request):
+        qs = self.get_queryset()
+        rows = qs.values("status").annotate(count=Count("id"))
+
+        data = {"todo": 0, "doing": 0, "done": 0}
+        for row in rows:
+            data[row["status"]] = row["count"]
+
+        return Response(data)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
