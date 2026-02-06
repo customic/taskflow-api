@@ -69,7 +69,7 @@ class TaskSerializer(serializers.ModelSerializer):
         Projekt musi należeć do zalogowanego użytkownika.
         """
         request = self.context.get("request")
-        if request and project.owner_id != request.user.id:
+        if request and request.user.is_authenticated and project.owner_id != request.user.id:
             raise serializers.ValidationError("You can only use your own projects.")
         return project
 
@@ -78,7 +78,7 @@ class TaskSerializer(serializers.ModelSerializer):
         Etykiety muszą należeć do zalogowanego użytkownika.
         """
         request = self.context.get("request")
-        if request:
+        if request and request.user.is_authenticated:
             for label in labels:
                 if label.owner_id != request.user.id:
                     raise serializers.ValidationError("You can only use your own labels.")
@@ -96,6 +96,6 @@ class CommentSerializer(serializers.ModelSerializer):
         Nie pozwalamy komentować cudzych zadań.
         """
         request = self.context.get("request")
-        if request and task.owner_id != request.user.id:
+        if request and request.user.is_authenticated and task.owner_id != request.user.id:
             raise serializers.ValidationError("You can only comment on your own tasks.")
         return task
